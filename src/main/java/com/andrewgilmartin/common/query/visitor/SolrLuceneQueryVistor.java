@@ -10,7 +10,6 @@ import com.andrewgilmartin.common.query.NumberQuery;
 import com.andrewgilmartin.common.query.OrQuery;
 import com.andrewgilmartin.common.query.PhraseQuery;
 import com.andrewgilmartin.common.query.Query;
-import com.andrewgilmartin.common.query.QueryException;
 import com.andrewgilmartin.common.query.TermQuery;
 import com.andrewgilmartin.common.query.VerbatimQuery;
 
@@ -21,16 +20,16 @@ public class SolrLuceneQueryVistor extends QueryVisitor<StringBuilder> {
     }
 
     @Override
-    public StringBuilder visitQuery(Query query) throws QueryException {
+    public StringBuilder visitQuery(Query query) {
         return visit(query, new StringBuilder());
     }
 
-    public StringBuilder visitQuery(Query query, StringBuilder builder) throws QueryException {
+    public StringBuilder visitQuery(Query query, StringBuilder builder) {
         return visit(query, builder);
     }
 
     @Override
-    protected StringBuilder visit(TermQuery query, StringBuilder builder) throws QueryException {
+    protected StringBuilder visit(TermQuery query, StringBuilder builder) {
         if (builder.length() > 0) {
             builder.append(' ');
         }
@@ -40,7 +39,7 @@ public class SolrLuceneQueryVistor extends QueryVisitor<StringBuilder> {
     }
 
     @Override
-    protected StringBuilder visit(NumberQuery query, StringBuilder builder) throws QueryException {
+    protected StringBuilder visit(NumberQuery query, StringBuilder builder) {
         if (builder.length() > 0) {
             builder.append(' ');
         }
@@ -49,7 +48,7 @@ public class SolrLuceneQueryVistor extends QueryVisitor<StringBuilder> {
     }
 
     @Override
-    protected StringBuilder visit(VerbatimQuery query, StringBuilder builder) throws QueryException {
+    protected StringBuilder visit(VerbatimQuery query, StringBuilder builder) {
         if (builder.length() > 0) {
             builder.append(' ');
         }
@@ -62,7 +61,7 @@ public class SolrLuceneQueryVistor extends QueryVisitor<StringBuilder> {
     }
 
     @Override
-    protected StringBuilder visit(PhraseQuery query, StringBuilder builder) throws QueryException {
+    protected StringBuilder visit(PhraseQuery query, StringBuilder builder) {
         if (builder.length() > 0) {
             builder.append(' ');
         }
@@ -75,7 +74,7 @@ public class SolrLuceneQueryVistor extends QueryVisitor<StringBuilder> {
     }
 
     @Override
-    protected StringBuilder visit(BooleanQuery query, StringBuilder builder) throws QueryException {
+    protected StringBuilder visit(BooleanQuery query, StringBuilder builder) {
         if (builder.length() > 0) {
             builder.append(' ');
         }
@@ -84,7 +83,7 @@ public class SolrLuceneQueryVistor extends QueryVisitor<StringBuilder> {
     }
 
     @Override
-    protected StringBuilder visit(AndQuery query, StringBuilder builder) throws QueryException {
+    protected StringBuilder visit(AndQuery query, StringBuilder builder) {
         switch (query.getQueries().size()) {
             case 0:
                 break;
@@ -109,7 +108,7 @@ public class SolrLuceneQueryVistor extends QueryVisitor<StringBuilder> {
     }
 
     @Override
-    protected StringBuilder visit(OrQuery query, StringBuilder builder) throws QueryException {
+    protected StringBuilder visit(OrQuery query, StringBuilder builder) {
         switch (query.getQueries().size()) {
             case 0:
                 break;
@@ -134,7 +133,7 @@ public class SolrLuceneQueryVistor extends QueryVisitor<StringBuilder> {
     }
 
     @Override
-    protected StringBuilder visit(NotQuery query, StringBuilder builder) throws QueryException {
+    protected StringBuilder visit(NotQuery query, StringBuilder builder) {
         switch (query.getQueries().size()) {
             case 0:
                 break;
@@ -159,8 +158,8 @@ public class SolrLuceneQueryVistor extends QueryVisitor<StringBuilder> {
     }
 
     @Override
-    protected StringBuilder visit(LuceneQuery query, StringBuilder builder) throws QueryException {
-        throw new QueryException("can't convert lucene queries");
+    protected StringBuilder visit(LuceneQuery query, StringBuilder builder) throws IllegalArgumentException {
+        throw new IllegalArgumentException("can't convert lucene queries");
     }
 
     protected StringBuilder quote(Collection<String> values, StringBuilder builder) {
@@ -183,6 +182,7 @@ public class SolrLuceneQueryVistor extends QueryVisitor<StringBuilder> {
                     builder.append(HEX_DIGITS[(c & 0x000F)]);
                 }
             }
+            next = true;
         }
         builder.append('"');
         return builder;
@@ -206,7 +206,7 @@ public class SolrLuceneQueryVistor extends QueryVisitor<StringBuilder> {
         builder.append('"');
         return builder;
     }
-    
+
     private final static char[] HEX_DIGITS = new char[]{
         '0',
         '1',
@@ -225,7 +225,7 @@ public class SolrLuceneQueryVistor extends QueryVisitor<StringBuilder> {
         'e',
         'f'
     };
-    
+
     private final static String[] ESCAPED_ASCII = new String[]{
         "\\u0000",
         "\\u0001",

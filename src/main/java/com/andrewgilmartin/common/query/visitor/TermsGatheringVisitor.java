@@ -1,14 +1,11 @@
 package com.andrewgilmartin.common.query.visitor;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import com.andrewgilmartin.common.query.BooleanQuery;
 import com.andrewgilmartin.common.query.LuceneQuery;
 import com.andrewgilmartin.common.query.PhraseQuery;
 import com.andrewgilmartin.common.query.Query;
-import com.andrewgilmartin.common.query.QueryException;
 import com.andrewgilmartin.common.query.TermQuery;
 import com.andrewgilmartin.common.query.VerbatimQuery;
 import com.andrewgilmartin.common.query.AndQuery;
@@ -18,67 +15,74 @@ import com.andrewgilmartin.common.query.OrQuery;
 
 /**
  * Gather all the terms used in the query. Terms are found in TermQuery,
- * PhraseQuery, and VerbatimQuery instances. The default is to ignore terms
- * found within prohibited boolean clauses.
+ * PhraseQuery, and VerbatimQuery instances. The default is to include all
+ * fields and to ignore terms found within prohibited boolean clauses. Note
+ * that a terms in a query within a NOT boolean clause within a NOT boolean 
+ * clause is are gathered, ie a NOT negates a NOT.
  */
 public class TermsGatheringVisitor extends QueryVisitor<Set<String>> {
 
-    private Map<String, String> fieldsToInclude; // default is to include all
-    private Map<String, String> fieldsToExclude; // default is to exclude none
+    private Set<String> fieldsToInclude; // default is to include all
+    private Set<String> fieldsToExclude; // default is to exclude none
     private boolean includeProhibitedTerms = false;
-    private int vistingWithinProhibitedQuery = 0;
+    private boolean vistingWithinProhibitedQuery = false;
 
     /**
-     * Returns an unordered collection of the found terms.
+     * Returns a set of gathered terms.
      */
-    public static Set<String> getTerms(Query query) throws QueryException {
-        try {
-            TermsGatheringVisitor visitor = new TermsGatheringVisitor();
-            return visitor.visit(query, new HashSet<String>());
-        } catch (QueryException e) {
-            throw new QueryException(e, "unable to gather terms from query: query={0}", query);
-        }
+    public static Set<String> getTerms(Query query) {
+        TermsGatheringVisitor visitor = new TermsGatheringVisitor();
+        return visitor.visit(query, new HashSet<>());
     }
 
     /**
-     * Should collected terms include those found in prohibited clauses?
+     * Should gathered terms include those found in prohibited clauses?
      */
-    public void setIncludeProhibitedTerms(boolean includeProhibitedTerms) {
+    public TermsGatheringVisitor setIncludeProhibitedTerms(boolean includeProhibitedTerms) {
         this.includeProhibitedTerms = includeProhibitedTerms;
+        return this;
     }
 
-    public void addIncludeField(String fieldName) {
+    /**
+     * Restrict gathered terms to this field (and others added later).
+     */
+    public TermsGatheringVisitor addIncludeField(String fieldName) {
         if (fieldName == null) {
             throw new IllegalArgumentException("fieldName must not be null");
         }
         if (fieldsToInclude == null) {
-            fieldsToInclude = new HashMap();
+            fieldsToInclude = new HashSet();
         }
-        fieldsToInclude.put(fieldName, fieldName);
+        fieldsToInclude.add(fieldName);
+        return this;
     }
 
-    public void addExcludeField(String fieldName) {
+    /**
+     * Avoid gathered terms from this field (and others added later).
+     */
+    public TermsGatheringVisitor addExcludeField(String fieldName) {
         if (fieldName == null) {
             throw new IllegalArgumentException("fieldName must not be null");
         }
         if (fieldsToExclude == null) {
-            fieldsToExclude = new HashMap();
+            fieldsToExclude = new HashSet();
         }
-        fieldsToExclude.put(fieldName, fieldName);
+        fieldsToExclude.add(fieldName);
+        return this;
     }
 
     private boolean isFieldIncluded(String fieldName) {
-        boolean include = fieldsToInclude == null || fieldsToInclude.containsKey(fieldName);
-        boolean exclude = fieldsToExclude != null && fieldsToExclude.containsKey(fieldName);
+        boolean include = fieldsToInclude == null || fieldsToInclude.contains(fieldName);
+        boolean exclude = fieldsToExclude != null && fieldsToExclude.contains(fieldName);
         return include && !exclude;
     }
 
     private boolean isQueryIncluded(String fieldName) {
-        return (includeProhibitedTerms || vistingWithinProhibitedQuery == 0) && isFieldIncluded(fieldName);
+        return (includeProhibitedTerms || !vistingWithinProhibitedQuery) && isFieldIncluded(fieldName);
     }
 
     @Override
-    protected Set<String> visit(TermQuery query, Set<String> allTerms) throws QueryException {
+    protected Set<String> visit(TermQuery query, Set<String> allTerms) {
         if (isQueryIncluded(query.getField())) {
             allTerms.add(query.getTerm());
         }
@@ -86,7 +90,7 @@ public class TermsGatheringVisitor extends QueryVisitor<Set<String>> {
     }
 
     @Override
-    protected Set<String> visit(NumberQuery query, Set<String> allTerms) throws QueryException {
+    protected Set<String> visit(NumberQuery query, Set<String> allTerms) {
         if (isQueryIncluded(query.getField())) {
             allTerms.add(query.getNumber().toString());
         }
@@ -94,7 +98,7 @@ public class TermsGatheringVisitor extends QueryVisitor<Set<String>> {
     }
 
     @Override
-    protected Set<String> visit(VerbatimQuery query, Set<String> allTerms) throws QueryException {
+    protected Set<String> visit(VerbatimQuery query, Set<String> allTerms) {
         if (isQueryIncluded(query.getField())) {
             allTerms.add(query.getTerm());
         }
@@ -102,7 +106,7 @@ public class TermsGatheringVisitor extends QueryVisitor<Set<String>> {
     }
 
     @Override
-    protected Set<String> visit(PhraseQuery query, Set<String> allTerms) throws QueryException {
+    protected Set<String> visit(PhraseQuery query, Set<String> allTerms) {
         if (isQueryIncluded(query.getField())) {
             for (String term : query.getTerms()) {
                 allTerms.add(term);
@@ -112,7 +116,7 @@ public class TermsGatheringVisitor extends QueryVisitor<Set<String>> {
     }
 
     @Override
-    protected Set<String> visit(BooleanQuery query, Set<String> allTerms) throws QueryException {
+    protected Set<String> visit(BooleanQuery query, Set<String> allTerms) {
         if (isQueryIncluded(query.getField())) {
             allTerms.add(Boolean.toString(query.getBoolean()));
         }
@@ -120,7 +124,7 @@ public class TermsGatheringVisitor extends QueryVisitor<Set<String>> {
     }
 
     @Override
-    protected Set<String> visit(AndQuery query, Set<String> allTerms) throws QueryException {
+    protected Set<String> visit(AndQuery query, Set<String> allTerms) {
         for (Query subQuery : query.getQueries()) {
             visit(subQuery, allTerms);
         }
@@ -128,7 +132,7 @@ public class TermsGatheringVisitor extends QueryVisitor<Set<String>> {
     }
 
     @Override
-    protected Set<String> visit(OrQuery query, Set<String> allTerms) throws QueryException {
+    protected Set<String> visit(OrQuery query, Set<String> allTerms) {
         for (Query subQuery : query.getQueries()) {
             visit(subQuery, allTerms);
         }
@@ -136,15 +140,20 @@ public class TermsGatheringVisitor extends QueryVisitor<Set<String>> {
     }
 
     @Override
-    protected Set<String> visit(NotQuery query, Set<String> allTerms) throws QueryException {
-        for (Query subQuery : query.getQueries()) {
-            visit(subQuery, allTerms);
+    protected Set<String> visit(NotQuery query, Set<String> allTerms) {
+        vistingWithinProhibitedQuery = !vistingWithinProhibitedQuery;
+        try {
+            for (Query subQuery : query.getQueries()) {
+                visit(subQuery, allTerms);
+            }
+            return allTerms;
+        } finally {
+            vistingWithinProhibitedQuery = !vistingWithinProhibitedQuery;
         }
-        return allTerms;
     }
 
     @Override
-    protected Set<String> visit(LuceneQuery query, Set<String> allTerms) throws QueryException {
+    protected Set<String> visit(LuceneQuery query, Set<String> allTerms) {
         return allTerms;
     }
 }

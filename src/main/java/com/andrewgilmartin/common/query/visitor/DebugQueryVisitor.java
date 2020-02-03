@@ -9,7 +9,6 @@ import com.andrewgilmartin.common.query.NumberQuery;
 import com.andrewgilmartin.common.query.OrQuery;
 import com.andrewgilmartin.common.query.PhraseQuery;
 import com.andrewgilmartin.common.query.Query;
-import com.andrewgilmartin.common.query.QueryException;
 import com.andrewgilmartin.common.query.TermQuery;
 import com.andrewgilmartin.common.query.VerbatimQuery;
 
@@ -17,22 +16,13 @@ public class DebugQueryVisitor extends QueryVisitor {
 
     private int nesting = 0;
 
-    public static void DUMP(Query query) {
-        try {
-            DebugQueryVisitor visitor = new DebugQueryVisitor();
-            System.out.println(visitor.visit(query));
-        }
-        catch (QueryException e) {
-            e.printStackTrace(System.out);
-        }
-    }
-
-    public StringBuilder visit(Query query) throws QueryException {
-        return (StringBuilder) visit(query, new StringBuilder());
+    @Override
+    public String visitQuery(Query query) {
+        return visit(query, new StringBuilder()).toString();
     }
 
     @Override
-    protected Object visit(TermQuery query, Object data) throws QueryException {
+    protected Object visit(TermQuery query, Object data) {
         append("(" + query.getClass().getName(), data);
         nesting++;
         append("(weight " + query.getWeight() + ")", data);
@@ -44,7 +34,7 @@ public class DebugQueryVisitor extends QueryVisitor {
     }
 
     @Override
-    protected Object visit(VerbatimQuery query, Object data) throws QueryException {
+    protected Object visit(VerbatimQuery query, Object data) {
         append("(" + query.getClass().getName(), data);
         nesting++;
         append("(weight " + query.getWeight() + ")", data);
@@ -56,7 +46,7 @@ public class DebugQueryVisitor extends QueryVisitor {
     }
 
     @Override
-    protected Object visit(PhraseQuery query, Object data) throws QueryException {
+    protected Object visit(PhraseQuery query, Object data) {
         append("(" + query.getClass().getName(), data);
         nesting++;
         append("(weight " + query.getWeight() + ")", data);
@@ -72,7 +62,7 @@ public class DebugQueryVisitor extends QueryVisitor {
     }
 
     @Override
-    protected Object visit(NumberQuery query, Object data) throws QueryException {
+    protected Object visit(NumberQuery query, Object data) {
         append("(" + query.getClass().getName(), data);
         nesting++;
         append("(weight " + query.getWeight() + ")", data);
@@ -84,19 +74,19 @@ public class DebugQueryVisitor extends QueryVisitor {
     }
 
     @Override
-    protected Object visit(BooleanQuery query, Object data) throws QueryException {
+    protected Object visit(BooleanQuery query, Object data) {
         append("(" + query.getClass().getName(), data);
         nesting++;
         append("(weight " + query.getWeight() + ")", data);
         append("(field " + query.getField() + ")", data);
-        append("(boolean " + query.getBoolean()+ ")", data);
+        append("(boolean " + query.getBoolean() + ")", data);
         nesting--;
         append(")", data);
         return data;
     }
 
     @Override
-    protected Object visit(LuceneQuery query, Object data) throws QueryException {
+    protected Object visit(LuceneQuery query, Object data) {
         StringBuilder buffer = (StringBuilder) data;
         append("(" + query.getClass().getName(), data);
         buffer.append(query.getLuceneQuery().toString());
@@ -105,7 +95,7 @@ public class DebugQueryVisitor extends QueryVisitor {
     }
 
     @Override
-    protected Object visit(AndQuery query, Object data) throws QueryException {
+    protected Object visit(AndQuery query, Object data) {
         append("(and " + query.getClass().getName(), data);
         nesting++;
         append("(weight " + query.getWeight() + ")", data);
@@ -120,7 +110,7 @@ public class DebugQueryVisitor extends QueryVisitor {
     }
 
     @Override
-    protected Object visit(OrQuery query, Object data) throws QueryException {
+    protected Object visit(OrQuery query, Object data) {
         append("(or " + query.getClass().getName(), data);
         nesting++;
         append("(weight " + query.getWeight() + ")", data);
@@ -135,7 +125,7 @@ public class DebugQueryVisitor extends QueryVisitor {
     }
 
     @Override
-    protected Object visit(NotQuery query, Object data) throws QueryException {
+    protected Object visit(NotQuery query, Object data) {
         append("(not " + query.getClass().getName(), data);
         nesting++;
         append("(weight " + query.getWeight() + ")", data);
@@ -158,18 +148,17 @@ public class DebugQueryVisitor extends QueryVisitor {
             char c = text.charAt(i);
             if (' ' <= c && c <= '~') {
                 buffer.append(c);
-            }
-            else {
+            } else {
                 buffer.append('\\');
                 buffer.append('u');
-                buffer.append(HEX_DIGITS[ (c & 0xF000) >>> 12]);
-                buffer.append(HEX_DIGITS[ (c & 0x0F00) >>> 8]);
-                buffer.append(HEX_DIGITS[ (c & 0x00F0) >>> 4]);
-                buffer.append(HEX_DIGITS[ (c & 0x000F)]);
+                buffer.append(HEX_DIGITS[(c & 0xF000) >>> 12]);
+                buffer.append(HEX_DIGITS[(c & 0x0F00) >>> 8]);
+                buffer.append(HEX_DIGITS[(c & 0x00F0) >>> 4]);
+                buffer.append(HEX_DIGITS[(c & 0x000F)]);
             }
         }
         buffer.append("\n");
     }
-    
+
     private final static char[] HEX_DIGITS = new char[]{'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'};
 }

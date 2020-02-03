@@ -29,7 +29,7 @@ public class CompoundTermQuery extends Query {
         return terms;
     }
 
-    public void addTerm(String term) {
+    public final void addTerm(String term) {
         if (term == null) {
             throw new IllegalArgumentException("term is null");
         }

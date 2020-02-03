@@ -1,76 +1,60 @@
 package com.andrewgilmartin.common.query.visitor;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import com.andrewgilmartin.common.query.PhraseQuery;
 import com.andrewgilmartin.common.query.Query;
-import com.andrewgilmartin.common.query.QueryException;
 import com.andrewgilmartin.common.query.TermQuery;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
- * Rewrites the given query so that TermQueries are replaced with a BooleanQuery
- * for the term or any of its equivalents. Hits on the original term can he
- * ranked differently than hits on an equivalent term.
+ * Removes a set of terms from term-queries and from phrase-queries. Different
+ * term lists can be used for each query type, if wanted.
  */
 public class TermsRemovalQueryVisitor extends QueryVisitorAdaptor {
 
-    private Map<String, String> terms;
-    private Map<String, String> phraseTerms;
+    private final Set<String> termsToRemove = new HashSet<>();
+    private final Set<String> phraseTermsToRemove = new HashSet<>();
 
-    public TermsRemovalQueryVisitor(String[] terms, String[] phraseTerms) {
-        this.terms = new HashMap<String, String>();
-        if (terms != null) {
-            for (String term : terms) {
-                this.terms.put(term, term);
+    public TermsRemovalQueryVisitor(Iterable<String> termsToRemove, Iterable<String> phraseTermsToRemove) {
+        if (termsToRemove != null) {
+            for (String term : termsToRemove) {
+                this.termsToRemove.add(term);
             }
         }
-        this.phraseTerms = new HashMap<String, String>();
-        if (phraseTerms != null) {
-            for (String phraseTerm : phraseTerms) {
-                this.phraseTerms.put(phraseTerm, phraseTerm);
+        if (phraseTermsToRemove != null) {
+            for (String phraseTerm : phraseTermsToRemove) {
+                this.phraseTermsToRemove.add(phraseTerm);
             }
         }
     }
 
-    public TermsRemovalQueryVisitor(Collection<String> terms, Collection<String> phraseTerms) {
-        this.terms = new HashMap<String, String>();
-        if (terms != null) {
-            for (String term : terms) {
-                this.terms.put(term, term);
-            }
-        }
-        this.phraseTerms = new HashMap<String, String>();
-        if (phraseTerms != null) {
-            for (String phraseTerm : phraseTerms) {
-                this.phraseTerms.put(phraseTerm, phraseTerm);
-            }
-        }
+    public TermsRemovalQueryVisitor(Collection<String> terms) {
+        this(terms, terms);
     }
 
-    public Query visit(Query query) throws QueryException {
+    public Query visit(Query query) {
         return visit(query, null);
     }
 
     @Override
-    protected Query visit(TermQuery query, Query data) throws QueryException {
-        return terms.containsKey(query.getTerm()) ? null : query;
+    protected Query visit(TermQuery query, Query data) {
+        return termsToRemove.contains(query.getTerm()) ? null : query;
     }
 
     @Override
-    protected Query visit(PhraseQuery query, Query data) throws QueryException {
+    protected Query visit(PhraseQuery query, Query data) {
         boolean phraseChanged = false;
         PhraseQuery pq = new PhraseQuery(query.getField());
         for (String term : query.getTerms()) {
-            if (!phraseTerms.containsKey(term)) {
+            if (!phraseTermsToRemove.contains(term)) {
                 pq.addTerm(term);
-            }
-            else {
+            } else {
                 phraseChanged = true;
             }
         }
         pq.setWeight(query.getWeight());
-        return phraseChanged ? (pq.hasTerms() ? pq : null) : query;
+        return phraseChanged ? (pq.hasTerms() /* ie, not empty */ ? pq : null) : query;
     }
 }
 
