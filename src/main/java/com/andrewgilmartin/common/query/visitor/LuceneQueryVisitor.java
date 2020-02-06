@@ -64,8 +64,12 @@ public class LuceneQueryVisitor extends QueryVisitor<org.apache.lucene.search.Qu
     protected org.apache.lucene.search.Query visit(AndQuery query, Void data) {
         org.apache.lucene.search.BooleanQuery.Builder builder = new org.apache.lucene.search.BooleanQuery.Builder();
         for (Query q : query.getQueries()) {
-            org.apache.lucene.search.Query luceneQuery = (org.apache.lucene.search.Query) visit(q, data);
-            builder.add(new org.apache.lucene.search.BooleanClause(luceneQuery, org.apache.lucene.search.BooleanClause.Occur.MUST));
+            if (NotQuery.class == q.getClass()) {
+                build(builder, (NotQuery) q, data);
+            } else {
+                org.apache.lucene.search.Query luceneQuery = (org.apache.lucene.search.Query) visit(q, data);
+                builder.add(new org.apache.lucene.search.BooleanClause(luceneQuery, org.apache.lucene.search.BooleanClause.Occur.MUST));
+            }
         }
         return boost(query, builder.build());
     }
@@ -74,8 +78,12 @@ public class LuceneQueryVisitor extends QueryVisitor<org.apache.lucene.search.Qu
     protected org.apache.lucene.search.Query visit(OrQuery query, Void data) {
         org.apache.lucene.search.BooleanQuery.Builder builder = new org.apache.lucene.search.BooleanQuery.Builder();
         for (Query q : query.getQueries()) {
-            org.apache.lucene.search.Query luceneQuery = (org.apache.lucene.search.Query) visit(q, data);
-            builder.add(new org.apache.lucene.search.BooleanClause(luceneQuery, org.apache.lucene.search.BooleanClause.Occur.SHOULD));
+            if (NotQuery.class == q.getClass()) {
+                build(builder, (NotQuery) q, data);
+            } else {
+                org.apache.lucene.search.Query luceneQuery = (org.apache.lucene.search.Query) visit(q, data);
+                builder.add(new org.apache.lucene.search.BooleanClause(luceneQuery, org.apache.lucene.search.BooleanClause.Occur.SHOULD));
+            }
         }
         return boost(query, builder.build());
     }
@@ -88,6 +96,14 @@ public class LuceneQueryVisitor extends QueryVisitor<org.apache.lucene.search.Qu
             builder.add(new org.apache.lucene.search.BooleanClause(luceneQuery, org.apache.lucene.search.BooleanClause.Occur.MUST_NOT));
         }
         return boost(query, builder.build());
+    }
+
+    protected org.apache.lucene.search.BooleanQuery.Builder build(org.apache.lucene.search.BooleanQuery.Builder builder, NotQuery query, Void data) {
+        for (Query q : query.getQueries()) {
+            org.apache.lucene.search.Query luceneQuery = boost(q, (org.apache.lucene.search.Query) visit(q, data));
+            builder.add(new org.apache.lucene.search.BooleanClause(luceneQuery, org.apache.lucene.search.BooleanClause.Occur.MUST_NOT));
+        }
+        return builder;
     }
 
     @Override
