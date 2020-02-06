@@ -2,7 +2,7 @@ package com.andrewgilmartin.common.query;
 
 public class LuceneQuery extends Query {
 
-    private org.apache.lucene.search.Query luceneQuery;
+    private final org.apache.lucene.search.Query luceneQuery;
 
     public LuceneQuery( float weight, org.apache.lucene.search.Query luceneQuery ) {
         super(weight);

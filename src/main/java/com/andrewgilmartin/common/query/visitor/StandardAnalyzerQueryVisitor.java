@@ -4,13 +4,12 @@ import java.util.regex.Pattern;
 import com.andrewgilmartin.common.query.PhraseQuery;
 import com.andrewgilmartin.common.query.Query;
 import com.andrewgilmartin.common.query.TermQuery;
-import com.andrewgilmartin.common.query.VerbatimQuery;
 
 /**
  * Applies the same term transformation as Lucene's StandardAnalyzer. This is
  * lowercasing, removing possessives, and removing acronym dots.
  */
-public class StandardAnalyzerQueryVisitor extends QueryVisitorAdaptor {
+public class StandardAnalyzerQueryVisitor extends QueryVisitorAdaptor<Void> {
 
     private static final String UNICODE_LETTER_PATTERN
             = // Note that the correct pattern is "\p{L}" but this does not consistently compile. This is a workaround. AJG
@@ -30,33 +29,24 @@ public class StandardAnalyzerQueryVisitor extends QueryVisitorAdaptor {
 
     // The acronym pattern is two or more occurance of a Unicode letter and
     // dot pairs. This pattern matches the one in Bongo's StandardTokenizer (JavaCC source).
-    private Pattern acronymPattern = Pattern.compile("^" + UNICODE_LETTER_PATTERN + "\\.(?:" + UNICODE_LETTER_PATTERN + "\\.)+$");
+    private Pattern ACRONYM_PATTERN = Pattern.compile("^" + UNICODE_LETTER_PATTERN + "\\.(?:" + UNICODE_LETTER_PATTERN + "\\.)+$");
 
     public Query visit(Query query) {
         return visit(query, null);
     }
 
     @Override
-    protected Query visit(TermQuery query, Query data) {
-        TermQuery tq = new TermQuery(query.getField(), filter(query.getTerm()));
-        tq.setWeight(query.getWeight());
+    protected Query visit(TermQuery query, Void data) {
+        TermQuery tq = new TermQuery(query.getWeight(), query.getField(), filter(query.getTerm()));
         return tq;
     }
 
     @Override
-    protected Query visit(VerbatimQuery query, Query data) {
-        VerbatimQuery vq = new VerbatimQuery(query.getField(), query.getTerm());
-        vq.setWeight(query.getWeight());
-        return vq;
-    }
-
-    @Override
-    protected Query visit(PhraseQuery query, Query data) {
-        PhraseQuery pq = new PhraseQuery(query.getField());
+    protected Query visit(PhraseQuery query, Void data) {
+        PhraseQuery pq = new PhraseQuery(query.getWeight(), query.getField());
         for (String term : query.getTerms()) {
             pq.addTerm(filter(term));
         }
-        pq.setWeight(query.getWeight());
         return pq;
     }
 
@@ -68,7 +58,7 @@ public class StandardAnalyzerQueryVisitor extends QueryVisitorAdaptor {
             term = term.substring(0, term.length() - 2);
         }
         // remove acronym dots
-        if (acronymPattern.matcher(term).matches()) {
+        if (ACRONYM_PATTERN.matcher(term).matches()) {
             StringBuilder t = new StringBuilder(term.length() / 2);
             for (int i = 0; i < term.length(); i += 2 /* step over letter-dot character pairs */) {
                 t.append(term.charAt(i));

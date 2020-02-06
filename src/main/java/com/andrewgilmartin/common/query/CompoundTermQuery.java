@@ -1,7 +1,6 @@
 package com.andrewgilmartin.common.query;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -25,7 +24,7 @@ public class CompoundTermQuery extends Query {
         return field;
     }
 
-    public Collection<String> getTerms() {
+    public List<String> getTerms() {
         return terms;
     }
 

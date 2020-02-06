@@ -12,16 +12,16 @@ import com.andrewgilmartin.common.query.TermQuery;
 import com.andrewgilmartin.common.query.VerbatimQuery;
 
 /**
- * This class is suitable as the base for a visitor that needs to modify the
- * query.
+ * Use this adaptor as the base for a visitor that will modify only a few query
+ * subclasses.
  */
-public class QueryVisitorAdaptor extends QueryVisitor<Query> {
+public class QueryVisitorAdaptor<DATA> extends QueryVisitor<Query, DATA> {
 
     /**
      * Return null to drop the boolean query from its parent.
      */
     @Override
-    protected Query visit(BooleanQuery query, Query data) {
+    protected Query visit(BooleanQuery query, DATA data) {
         return query;
     }
 
@@ -29,7 +29,7 @@ public class QueryVisitorAdaptor extends QueryVisitor<Query> {
      * Return null to drop the term query from its parent.
      */
     @Override
-    protected Query visit(TermQuery query, Query data) {
+    protected Query visit(TermQuery query, DATA data) {
         return query;
     }
 
@@ -37,7 +37,7 @@ public class QueryVisitorAdaptor extends QueryVisitor<Query> {
      * Return null to drop the term query from its parent.
      */
     @Override
-    protected Query visit(VerbatimQuery query, Query data) {
+    protected Query visit(VerbatimQuery query, DATA data) {
         return query;
     }
 
@@ -45,12 +45,12 @@ public class QueryVisitorAdaptor extends QueryVisitor<Query> {
      * Return null to drop the phrase query from its parent.
      */
     @Override
-    protected Query visit(PhraseQuery query, Query data) {
+    protected Query visit(PhraseQuery query, DATA data) {
         return query;
     }
 
     @Override
-    protected Query visit(NumberQuery query, Query data) {
+    protected Query visit(NumberQuery query, DATA data) {
         return query;
     }
 
@@ -58,46 +58,43 @@ public class QueryVisitorAdaptor extends QueryVisitor<Query> {
      * Return null to drop the lucene query from its parent.
      */
     @Override
-    protected Query visit(LuceneQuery query, Query data) {
+    protected Query visit(LuceneQuery query, DATA data) {
         return query;
     }
 
     @Override
-    protected Query visit(AndQuery query, Query data) {
-        AndQuery qq = new AndQuery();
+    protected Query visit(AndQuery query, DATA data) {
+        AndQuery qq = new AndQuery(query.getWeight());
         for (Query q : query.getQueries()) {
             Query rq = visit(q, data);
             if (rq != null) {
                 qq.addQuery(rq);
             }
         }
-        qq.setWeight(query.getWeight());
-        return qq.hasQueries() ? qq : null;
+        return qq;
     }
 
     @Override
-    protected Query visit(OrQuery query, Query data) {
-        OrQuery qq = new OrQuery();
+    protected Query visit(OrQuery query, DATA data) {
+        OrQuery qq = new OrQuery(query.getWeight());
         for (Query q : query.getQueries()) {
             Query rq = visit(q, data);
             if (rq != null) {
                 qq.addQuery(rq);
             }
         }
-        qq.setWeight(query.getWeight());
-        return qq.hasQueries() ? qq : null;
+        return qq;
     }
 
     @Override
-    protected Query visit(NotQuery query, Query data) {
-        NotQuery qq = new NotQuery();
+    protected Query visit(NotQuery query, DATA data) {
+        NotQuery qq = new NotQuery(query.getWeight());
         for (Query q : query.getQueries()) {
             Query rq = visit(q, data);
             if (rq != null) {
                 qq.addQuery(rq);
             }
         }
-        qq.setWeight(query.getWeight());
-        return qq.hasQueries() ? qq : null;
+        return qq;
     }
 }

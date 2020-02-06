@@ -13,7 +13,7 @@ import com.andrewgilmartin.common.query.Query;
 import com.andrewgilmartin.common.query.TermQuery;
 import com.andrewgilmartin.common.query.VerbatimQuery;
 
-public class SolrLuceneQueryVistor extends QueryVisitor<StringBuilder> {
+public class SolrLuceneQueryVistor extends QueryVisitor<StringBuilder,StringBuilder> {
 
     public String getDefType() {
         return "lucene";
@@ -30,129 +30,89 @@ public class SolrLuceneQueryVistor extends QueryVisitor<StringBuilder> {
 
     @Override
     protected StringBuilder visit(TermQuery query, StringBuilder builder) {
-        if (builder.length() > 0) {
-            builder.append(' ');
-        }
         builder.append(query.getField()).append(": ");
         quote(query.getTerm(), builder);
+        boost(query, builder);
         return builder;
     }
 
     @Override
     protected StringBuilder visit(NumberQuery query, StringBuilder builder) {
-        if (builder.length() > 0) {
-            builder.append(' ');
-        }
         builder.append(query.getField()).append(": ").append(query.getNumber().toString());
+        boost(query, builder);
         return builder;
     }
 
     @Override
     protected StringBuilder visit(VerbatimQuery query, StringBuilder builder) {
-        if (builder.length() > 0) {
-            builder.append(' ');
-        }
         builder.append(query.getField()).append(": ");
         quote(query.getTerm(), builder);
-        if (query.hasWeight()) {
-            builder.append(" ^").append(query.getWeight());
-        }
+        boost(query, builder);
         return builder;
     }
 
     @Override
     protected StringBuilder visit(PhraseQuery query, StringBuilder builder) {
-        if (builder.length() > 0) {
-            builder.append(' ');
-        }
-        builder.append(query.getField()).append(": ");
-        quote(query.getTerms(), builder);
-        if (query.hasWeight()) {
-            builder.append(" ^").append(query.getWeight());
+        if (query.hasTerms()) {
+            builder.append(query.getField()).append(": ");
+            quote(query.getTerms(), builder);
+            boost(query, builder);
         }
         return builder;
     }
 
     @Override
     protected StringBuilder visit(BooleanQuery query, StringBuilder builder) {
-        if (builder.length() > 0) {
-            builder.append(' ');
-        }
         builder.append(query.getField()).append(": ").append(Boolean.toString(query.getBoolean()));
+        boost(query, builder);
         return builder;
     }
 
     @Override
     protected StringBuilder visit(AndQuery query, StringBuilder builder) {
-        switch (query.getQueries().size()) {
-            case 0:
-                break;
-            case 1:
-                visit(query.getQueries().get(0), builder);
-                break;
-            default:
-                builder.append("(");
-                Iterator<Query> i = query.getQueries().iterator();
+        if (query.hasQueries()) {
+            builder.append("(");
+            Iterator<Query> i = query.getQueries().iterator();
+            visit(i.next(), builder);
+            while (i.hasNext()) {
+                builder.append(" AND ");
                 visit(i.next(), builder);
-                while (i.hasNext()) {
-                    builder.append(" AND ");
-                    visit(i.next(), builder);
-                }
-                builder.append(")");
-                break;
-        }
-        if (query.hasWeight()) {
-            builder.append(" ^").append(query.getWeight());
+            }
+            builder.append(")");
+            boost(query, builder);
         }
         return builder;
     }
 
     @Override
     protected StringBuilder visit(OrQuery query, StringBuilder builder) {
-        switch (query.getQueries().size()) {
-            case 0:
-                break;
-            case 1:
-                visit(query.getQueries().get(0), builder);
-                break;
-            default:
-                builder.append("(");
-                Iterator<Query> i = query.getQueries().iterator();
+        if (query.hasQueries()) {
+            builder.append("(");
+            Iterator<Query> i = query.getQueries().iterator();
+            visit(i.next(), builder);
+            while (i.hasNext()) {
+                builder.append(" OR ");
                 visit(i.next(), builder);
-                while (i.hasNext()) {
-                    builder.append(" OR ");
-                    visit(i.next(), builder);
-                }
-                builder.append(")");
-                break;
-        }
-        if (query.hasWeight()) {
-            builder.append(" ^").append(query.getWeight());
+            }
+            builder.append(")");
+            boost(query, builder);
         }
         return builder;
     }
 
     @Override
     protected StringBuilder visit(NotQuery query, StringBuilder builder) {
-        switch (query.getQueries().size()) {
-            case 0:
-                break;
-            case 1:
-                visit(query.getQueries().get(0), builder);
-                break;
-            default:
-                builder.append("(");
-                Iterator<Query> i = query.getQueries().iterator();
+        if (query.hasQueries()) {
+            builder.append("NOT ");
+            builder.append("(");
+            Iterator<Query> i = query.getQueries().iterator();
+            visit(i.next(), builder);
+            while (i.hasNext()) {
+                builder.append(" ");
                 visit(i.next(), builder);
-                while (i.hasNext()) {
-                    builder.append(" NOT ");
-                    visit(i.next(), builder);
-                }
-                builder.append(")");
-                break;
-        }
-        if (query.hasWeight()) {
-            builder.append(" ^").append(query.getWeight());
+            }
+            builder.append(")");
+            boost(query, builder);
         }
         return builder;
     }
@@ -160,6 +120,13 @@ public class SolrLuceneQueryVistor extends QueryVisitor<StringBuilder> {
     @Override
     protected StringBuilder visit(LuceneQuery query, StringBuilder builder) throws IllegalArgumentException {
         throw new IllegalArgumentException("can't convert lucene queries");
+    }
+
+    protected StringBuilder boost(Query query, StringBuilder builder) {
+        if (query.hasWeight()) {
+            builder.append(" ^").append(query.getWeight());
+        }
+        return builder;
     }
 
     protected StringBuilder quote(Collection<String> values, StringBuilder builder) {

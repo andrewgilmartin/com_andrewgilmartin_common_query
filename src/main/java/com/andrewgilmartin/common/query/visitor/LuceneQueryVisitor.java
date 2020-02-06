@@ -12,42 +12,46 @@ import com.andrewgilmartin.common.query.TermQuery;
 import com.andrewgilmartin.common.query.VerbatimQuery;
 import org.apache.lucene.search.BoostQuery;
 
-public class LuceneQueryVisitor extends QueryVisitor {
+/**
+ * Builds a Lucene API query. Recommend that you use ReduceQueryVisitor before
+ * applying this visitor.
+ */
+public class LuceneQueryVisitor extends QueryVisitor<org.apache.lucene.search.Query, Void> {
 
     public org.apache.lucene.search.Query visit(Query query) {
         return (org.apache.lucene.search.Query) visit(query, null);
     }
 
     @Override
-    protected Object visit(TermQuery query, Object data) {
+    protected org.apache.lucene.search.Query visit(TermQuery query, Void data) {
         org.apache.lucene.index.Term t = new org.apache.lucene.index.Term(query.getField(), query.getTerm());
         org.apache.lucene.search.TermQuery tq = new org.apache.lucene.search.TermQuery(t);
         return boost(query, tq);
     }
 
     @Override
-    protected Object visit(NumberQuery query, Object data) {
+    protected org.apache.lucene.search.Query visit(NumberQuery query, Void data) {
         org.apache.lucene.index.Term t = new org.apache.lucene.index.Term(query.getField(), query.getNumber().toString());
         org.apache.lucene.search.TermQuery tq = new org.apache.lucene.search.TermQuery(t);
         return boost(query, tq);
     }
 
     @Override
-    protected Object visit(VerbatimQuery query, Object data) {
+    protected org.apache.lucene.search.Query visit(VerbatimQuery query, Void data) {
         org.apache.lucene.index.Term t = new org.apache.lucene.index.Term(query.getField(), query.getTerm());
         org.apache.lucene.search.TermQuery tq = new org.apache.lucene.search.TermQuery(t);
         return boost(query, tq);
     }
 
     @Override
-    protected Object visit(BooleanQuery query, Object data) {
+    protected org.apache.lucene.search.Query visit(BooleanQuery query, Void data) {
         org.apache.lucene.index.Term t = new org.apache.lucene.index.Term(query.getField(), Boolean.toString(query.getBoolean()));
         org.apache.lucene.search.TermQuery tq = new org.apache.lucene.search.TermQuery(t);
         return boost(query, tq);
     }
 
     @Override
-    protected Object visit(PhraseQuery query, Object data) {
+    protected org.apache.lucene.search.Query visit(PhraseQuery query, Void data) {
         org.apache.lucene.search.PhraseQuery.Builder builder = new org.apache.lucene.search.PhraseQuery.Builder();
         for (String term : query.getTerms()) {
             org.apache.lucene.index.Term t = new org.apache.lucene.index.Term(query.getField(), term);
@@ -57,7 +61,7 @@ public class LuceneQueryVisitor extends QueryVisitor {
     }
 
     @Override
-    protected Object visit(AndQuery query, Object data) {
+    protected org.apache.lucene.search.Query visit(AndQuery query, Void data) {
         org.apache.lucene.search.BooleanQuery.Builder builder = new org.apache.lucene.search.BooleanQuery.Builder();
         for (Query q : query.getQueries()) {
             org.apache.lucene.search.Query luceneQuery = (org.apache.lucene.search.Query) visit(q, data);
@@ -67,7 +71,7 @@ public class LuceneQueryVisitor extends QueryVisitor {
     }
 
     @Override
-    protected Object visit(OrQuery query, Object data) {
+    protected org.apache.lucene.search.Query visit(OrQuery query, Void data) {
         org.apache.lucene.search.BooleanQuery.Builder builder = new org.apache.lucene.search.BooleanQuery.Builder();
         for (Query q : query.getQueries()) {
             org.apache.lucene.search.Query luceneQuery = (org.apache.lucene.search.Query) visit(q, data);
@@ -77,7 +81,7 @@ public class LuceneQueryVisitor extends QueryVisitor {
     }
 
     @Override
-    protected Object visit(NotQuery query, Object data) {
+    protected org.apache.lucene.search.Query visit(NotQuery query, Void data) {
         org.apache.lucene.search.BooleanQuery.Builder builder = new org.apache.lucene.search.BooleanQuery.Builder();
         for (Query q : query.getQueries()) {
             org.apache.lucene.search.Query luceneQuery = (org.apache.lucene.search.Query) visit(q, data);
@@ -87,7 +91,7 @@ public class LuceneQueryVisitor extends QueryVisitor {
     }
 
     @Override
-    protected Object visit(LuceneQuery query, Object data) {
+    protected org.apache.lucene.search.Query visit(LuceneQuery query, Void data) {
         org.apache.lucene.search.Query q = query.getLuceneQuery();
         return boost(query, q);
     }

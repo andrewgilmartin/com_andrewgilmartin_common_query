@@ -14,7 +14,7 @@ import org.junit.Test;
 
 public class TermsGatheringVisitorTest {
 
-    Query q;
+    private Query q;
 
     @Before
     public void setUp() {
@@ -35,10 +35,6 @@ public class TermsGatheringVisitorTest {
                         new PhraseQuery(0, "y", "j", "k")
                 )
         );
-    }
-
-    @After
-    public void tearDown() {
     }
 
     @Test

@@ -20,7 +20,7 @@ import com.andrewgilmartin.common.query.OrQuery;
  * that a terms in a query within a NOT boolean clause within a NOT boolean 
  * clause is are gathered, ie a NOT negates a NOT.
  */
-public class TermsGatheringVisitor extends QueryVisitor<Set<String>> {
+public class TermsGatheringVisitor extends QueryVisitor<Set<String>,Set<String>> {
 
     private Set<String> fieldsToInclude; // default is to include all
     private Set<String> fieldsToExclude; // default is to exclude none

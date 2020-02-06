@@ -29,6 +29,10 @@ public class AndQuery extends CompoundQuery {
         }
     }
 
+    public AndQuery(Query... queries) {
+        this(Float.NaN,queries);
+    }
+
     public AndQuery() {
         // empty
     }

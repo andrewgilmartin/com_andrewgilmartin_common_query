@@ -29,6 +29,10 @@ public class NotQuery extends CompoundQuery {
         }
     }
 
+    public NotQuery(Query... queries) {
+        this(Float.NaN, queries);
+    }
+
     public NotQuery() {
         // empty
     }

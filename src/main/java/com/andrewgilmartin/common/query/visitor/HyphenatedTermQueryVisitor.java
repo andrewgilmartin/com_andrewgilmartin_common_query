@@ -23,7 +23,7 @@ import com.andrewgilmartin.common.query.TermQuery;
  * multiplied by the weight given at construction. For example, if the term
  * weight is 5 and the multiplier is 0.5 then the phrase weight is 2.5.
  */
-public class HyphenatedTermQueryVisitor extends QueryVisitorAdaptor {
+public class HyphenatedTermQueryVisitor extends QueryVisitorAdaptor<Void> {
 
     private final float weight;
 
@@ -31,22 +31,17 @@ public class HyphenatedTermQueryVisitor extends QueryVisitorAdaptor {
         this.weight = weight;
     }
 
-    public Query visit(Query query) {
-        return visit(query, null);
-    }
-
     @Override
-    protected Query visit(TermQuery termQuery, Query data) {
+    protected Query visit(TermQuery termQuery, Void data) {
         if (!termQuery.getTerm().contains("-")) {
             return termQuery;
         }
 
-        PhraseQuery phraseQuery = new PhraseQuery(termQuery.getField());
+        PhraseQuery phraseQuery = new PhraseQuery(termQuery.getWeight() * weight, termQuery.getField());
         String[] terms = termQuery.getTerm().split("-");
         for (String term : terms) {
             phraseQuery.addTerm(term);
         }
-        phraseQuery.setWeight(termQuery.getWeight() * weight);
 
         OrQuery bq = new OrQuery();
         bq.addQuery(termQuery);

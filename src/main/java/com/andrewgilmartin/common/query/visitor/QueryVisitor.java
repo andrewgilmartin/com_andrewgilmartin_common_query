@@ -11,13 +11,13 @@ import com.andrewgilmartin.common.query.Query;
 import com.andrewgilmartin.common.query.TermQuery;
 import com.andrewgilmartin.common.query.VerbatimQuery;
 
-public abstract class QueryVisitor<T> {
+public abstract class QueryVisitor<RESULT,DATA> {
 
-    public T visitQuery(Query query) {
+    public RESULT visitQuery(Query query) {
         return visit(query, null);
     }
 
-    protected T visit(Query query, T data) {
+    protected RESULT visit(Query query, DATA data) {
         if (query == null) {
             return null;
         }
@@ -51,21 +51,21 @@ public abstract class QueryVisitor<T> {
         throw new IllegalStateException("unknown query subclass");
     }
 
-    protected abstract T visit(TermQuery query, T data);
+    protected abstract RESULT visit(TermQuery query, DATA data);
 
-    protected abstract T visit(VerbatimQuery query, T data);
+    protected abstract RESULT visit(VerbatimQuery query, DATA data);
 
-    protected abstract T visit(PhraseQuery query, T data);
+    protected abstract RESULT visit(PhraseQuery query, DATA data);
 
-    protected abstract T visit(NumberQuery query, T data);
+    protected abstract RESULT visit(NumberQuery query, DATA data);
 
-    protected abstract T visit(BooleanQuery query, T data);
+    protected abstract RESULT visit(BooleanQuery query, DATA data);
 
-    protected abstract T visit(LuceneQuery query, T data);
+    protected abstract RESULT visit(LuceneQuery query, DATA data);
 
-    protected abstract T visit(AndQuery query, T data);
+    protected abstract RESULT visit(AndQuery query, DATA data);
 
-    protected abstract T visit(OrQuery query, T data);
+    protected abstract RESULT visit(OrQuery query, DATA data);
 
-    protected abstract T visit(NotQuery query, T data);
+    protected abstract RESULT visit(NotQuery query, DATA data);
 }

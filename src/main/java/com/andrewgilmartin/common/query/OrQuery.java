@@ -29,6 +29,10 @@ public class OrQuery extends CompoundQuery {
         }
     }
 
+    public OrQuery(Query... queries) {
+        this(Float.NaN,queries);
+    }
+    
     public OrQuery() {
         // empty
     }
